@@ -1,0 +1,3 @@
+# Optional PC-side GPU trainer. Install with setup_gpu_ml.bat so pip selects the
+# current official CUDA 12.8 wheel from PyTorch's own index.
+torch

@@ -1,0 +1,51 @@
+# =============================================================================
+# League Draft Lab — what stays out of git
+#
+# Secrets (config.env) and all generated runtime data are never committed.
+# Patterns without a slash match at any depth, so they protect both apps
+# (draft_app/ and collector_app/). App-level .gitignore files add extra
+# defense for their own data/ and sync folders.
+# =============================================================================
+
+# --- Secrets: never commit real credentials ---------------------------------
+config.env
+config.env.*
+*.env
+!config.env.example
+
+# --- Python -----------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+
+# --- Builds / packaging -----------------------------------------------------
+build/
+dist/
+
+# --- Generated runtime data (databases, models, static caches, logs) --------
+*.sqlite3
+*.sqlite3-wal
+*.sqlite3-shm
+*.joblib
+*.npz
+*.log
+
+# --- Sync bundles (generated artifacts; folders themselves stay via .gitkeep)
+*.sync.zip
+outbox/*
+!outbox/.gitkeep
+sync_inbox/*
+!sync_inbox/.gitkeep
+sync_inbox_processed/*
+!sync_inbox_processed/.gitkeep
+data/*
+!data/.gitkeep
+
+# --- OS / editor noise ------------------------------------------------------
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

@@ -1,0 +1,17 @@
+[Unit]
+Description=League Draft Lab v3.1 data collector (Ubuntu)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=@APP_DIR@
+ExecStart=@APP_DIR@/.venv/bin/python collector_daemon.py
+Restart=on-failure
+RestartSec=30
+# The server powers on at 06:00 AEST and off at 02:00; systemd brings this
+# service up automatically with the machine and it self-refreshes static data.
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=default.target

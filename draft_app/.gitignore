@@ -1,0 +1,20 @@
+# Secondary defense; the root .gitignore covers these too.
+config.env
+config.env.*
+!config.env.example
+.venv/
+__pycache__/
+.pytest_cache/
+build/
+dist/
+*.log
+
+# All generated runtime data (databases, models, icon caches, static data).
+data/*
+!data/.gitkeep
+
+# Sync bundles are generated artifacts, never tracked.
+sync_inbox/*
+!sync_inbox/.gitkeep
+sync_inbox_processed/*
+!sync_inbox_processed/.gitkeep

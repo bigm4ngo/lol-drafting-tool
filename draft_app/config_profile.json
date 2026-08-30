@@ -1,0 +1,132 @@
+{
+  "profile_version": "3.0.0",
+  "target_elo": "EMERALD+",
+  "region_platform": "OC1",
+  "regional_route": "SEA",
+  "queue": "RANKED_SOLO_5x5",
+  "queue_id": 420,
+  "divisions": [
+    "I",
+    "II",
+    "III",
+    "IV"
+  ],
+  "restrict_to_pool": false,
+  "comfort_picks": {
+    "TOP": [],
+    "JUNGLE": [],
+    "MID": [],
+    "ADC": [],
+    "SUPPORT": []
+  },
+  "pocket_picks": {
+    "TOP": [],
+    "JUNGLE": [],
+    "MID": [],
+    "ADC": [],
+    "SUPPORT": []
+  },
+  "general_pool": {
+    "TOP": [],
+    "JUNGLE": [],
+    "MID": [],
+    "ADC": [],
+    "SUPPORT": []
+  },
+  "weights": {
+    "global_win_rate": 1.0,
+    "synergy_delta": 1.0,
+    "counter_delta": 1.0,
+    "composition": 0.65,
+    "machine_learning": 0.75,
+    "confidence": 0.2
+  },
+  "personal_multipliers": {
+    "comfort": 1.25,
+    "pocket": 1.1,
+    "general": 1.0
+  },
+  "minimum_samples": {
+    "global": 20,
+    "synergy": 8,
+    "counter": 8,
+    "build": 5
+  },
+  "shrinkage": {
+    "global": 40.0,
+    "synergy": 20.0,
+    "counter": 20.0,
+    "build": 12.0
+  },
+  "composition_targets": {
+    "damage_balance": 1.0,
+    "frontline": 0.65,
+    "control": 0.55,
+    "objective": 0.45,
+    "engage": 0.45,
+    "disengage": 0.3,
+    "pick_potential": 0.42,
+    "waveclear": 0.32,
+    "mobility": 0.2,
+    "early_strength": 0.18,
+    "mid_strength": 0.22,
+    "late_strength": 0.26
+  },
+  "machine_learning": {
+    "enabled": true,
+    "use_gpu": true,
+    "mixed_precision": true,
+    "ensemble_size": 3,
+    "embedding_dimension": 24,
+    "role_embedding_dimension": 6,
+    "slot_hidden_dimension": 32,
+    "hidden_dimension": 64,
+    "dropout": 0.12,
+    "epochs": 80,
+    "early_stopping_patience": 10,
+    "batch_size": 256,
+    "learning_rate": 0.0025,
+    "minimum_training_matches": 250,
+    "patch_half_life": 3.0,
+    "minimum_patch_weight": 0.12,
+    "role_inference_minimum_probability": 0.002
+  },
+  "scraper": {
+    "players_per_run": 80,
+    "matches_per_player": 15,
+    "max_matches_per_run": 600,
+    "max_concurrent_requests": 4,
+    "min_game_duration_seconds": 900,
+    "request_timeout_seconds": 20,
+    "max_retries": 5,
+    "matches_window_days": 0
+  },
+  "background_collector": {
+    "enabled": false,
+    "minimum_poll_seconds": 45,
+    "maximum_poll_seconds": 300,
+    "player_refresh_minutes": 30,
+    "players_per_poll": 20,
+    "maximum_backoff_minutes": 20,
+    "rebuild_analytics_each_batch": true
+  },
+  "sync": {
+    "outbox_dir": "",
+    "inbox_dir": "",
+    "poll_interval_seconds": 300,
+    "enable_pc_ingest": true,
+    "enable_auto_rebuild": true,
+    "max_delta_matches_per_ingest": 5000
+  },
+  "ui": {
+    "poll_interval_ms": 40,
+    "top_n": 10,
+    "ban_top_n": 5,
+    "include_hover_intents_on_board": true,
+    "window_width": 1580,
+    "window_height": 940,
+    "show_confidence": true,
+    "show_explanations": true,
+    "embedding_neighbors": 8
+  }
+}

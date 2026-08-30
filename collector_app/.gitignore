@@ -1,0 +1,15 @@
+# Secondary defense; the root .gitignore covers these too.
+config.env
+config.env.*
+!config.env.example
+.venv/
+__pycache__/
+*.log
+
+# All generated runtime data (SQLite DB, champion map, static data).
+data/*
+!data/.gitkeep
+
+# Exported bundles and temp delta databases are generated artifacts.
+outbox/*
+!outbox/.gitkeep
