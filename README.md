@@ -1,4 +1,4 @@
-# League Draft Lab v3.2
+# League Draft Lab v3.2.1
 
 A League of Legends draft assistant: live LCU drafting, analytics, and ML
 training on your PC, powered by a steady stream of ranked matches collected

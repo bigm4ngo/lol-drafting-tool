@@ -18,3 +18,7 @@ sync_inbox/*
 !sync_inbox/.gitkeep
 sync_inbox_processed/*
 !sync_inbox_processed/.gitkeep
+
+# Quarantined broken bundles (generated artifacts).
+sync_inbox_failed/*
+!sync_inbox_failed/.gitkeep

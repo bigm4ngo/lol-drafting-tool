@@ -49,3 +49,4 @@ data/*
 Thumbs.db
 .idea/
 .vscode/
+*.sync.zip.error.txt

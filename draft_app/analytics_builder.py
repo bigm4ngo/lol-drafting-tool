@@ -235,29 +235,73 @@ class AnalyticsBuilder:
 
     @staticmethod
     def _safe_json(value: Any, default: Any) -> Any:
-        try:
-            return json.loads(value) if isinstance(value, str) else value
-        except (TypeError, json.JSONDecodeError):
+        """Parse a ``*_json`` column, falling back to ``default`` for bad cells.
+
+        Rows merged across schema versions (or hand-edited databases) can hold
+        plain numbers, NULL/NaN, or truncated JSON in these columns. Iterating
+        such a value previously crashed the whole rebuild with
+        ``TypeError: 'float' object is not iterable``, so anything that does
+        not parse into the expected container is treated as empty.
+        """
+        if value is None:
             return default
+        if isinstance(value, bytes):
+            value = value.decode("utf-8", errors="replace")
+        if isinstance(value, str):
+            text = value.strip()
+            if not text:
+                return default
+            try:
+                value = json.loads(text)
+            except (TypeError, ValueError, json.JSONDecodeError):
+                return default
+        if isinstance(default, dict):
+            return value if isinstance(value, dict) else default
+        if isinstance(default, list):
+            return list(value) if isinstance(value, (list, tuple)) else default
+        return value
+
+    @staticmethod
+    def _numeric_ids(values: Any) -> list[int]:
+        """Coerce a JSON list into positive integer ids, skipping junk cells."""
+        ids: list[int] = []
+        for value in values if isinstance(values, (list, tuple)) else []:
+            try:
+                number = int(value or 0)
+            except (TypeError, ValueError):
+                continue
+            if number > 0:
+                ids.append(number)
+        return ids
+
+    @staticmethod
+    def _int_cell(value: Any) -> int:
+        """Read a scalar column defensively (NULL/NaN/text cells become 0)."""
+        try:
+            return int(value or 0)
+        except (TypeError, ValueError):
+            return 0
 
     def _builds(self, p: pd.DataFrame) -> pd.DataFrame:
         completed = self.static.completed_item_ids()
         records: list[dict[str, Any]] = []
         for row in p.itertuples(index=False):
-            items = [int(x) for x in self._safe_json(row.items_json, []) if int(x or 0) > 0]
+            items = self._numeric_ids(self._safe_json(row.items_json, []))
             filtered = [item for item in items if not completed or item in completed]
             core = filtered[:3]
-            runes = [int(x) for x in self._safe_json(row.rune_page_json, []) if int(x or 0) > 0]
+            runes = self._numeric_ids(self._safe_json(row.rune_page_json, []))
             stat_perks = self._safe_json(row.stat_perks_json, {})
-            spell_pair = sorted([int(row.summoner1_id), int(row.summoner2_id)])
+            spell_pair = sorted([self._int_cell(row.summoner1_id), self._int_cell(row.summoner2_id)])
+            primary_style = self._int_cell(row.primary_style_id)
+            sub_style = self._int_cell(row.sub_style_id)
             samples = {
                 "items": {"ids": core},
-                "runes": {"primary_style_id": int(row.primary_style_id), "sub_style_id": int(row.sub_style_id), "perk_ids": runes, "stat_perks": stat_perks},
+                "runes": {"primary_style_id": primary_style, "sub_style_id": sub_style, "perk_ids": runes, "stat_perks": stat_perks},
                 "spells": {"ids": spell_pair},
                 "loadouts": {
                     "item_ids": core,
-                    "primary_style_id": int(row.primary_style_id),
-                    "sub_style_id": int(row.sub_style_id),
+                    "primary_style_id": primary_style,
+                    "sub_style_id": sub_style,
                     "perk_ids": runes,
                     "stat_perks": stat_perks,
                 },
@@ -273,9 +317,9 @@ class AnalyticsBuilder:
                     continue
                 signature = json.dumps(sample, sort_keys=True, separators=(",", ":"))
                 records.append({
-                    "kind": kind, "role": row.role, "champion_id": int(row.champion_id),
+                    "kind": kind, "role": row.role, "champion_id": self._int_cell(row.champion_id),
                     "signature": signature, "sample_json": json.dumps(sample),
-                    "win": int(row.win), "patch_weight": float(row.patch_weight),
+                    "win": self._int_cell(row.win), "patch_weight": float(row.patch_weight or 0.0),
                 })
         columns = ["kind", "role", "champion_id", "signature", "games", "wins", "weighted_games", "weighted_wins", "win_rate", "adjusted_win_rate", "sample_json", "rank"]
         if not records:

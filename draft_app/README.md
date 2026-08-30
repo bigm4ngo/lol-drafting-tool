@@ -1,8 +1,17 @@
-# League Draft Lab v3.2 — Windows draft app
+# League Draft Lab v3.2.1 — Windows draft app
 
 The Windows-side application for the main PC (League + GPU). It keeps the v3
 live LCU drafting, analytics, ML training, pools, and Data Watcher tabs, and
 now consumes data pushed from the Ubuntu collector.
+
+## v3.2.1 changes
+
+- Fixed the analytics/model rebuild crash (`TypeError: 'float' object is not iterable`) caused by non-JSON junk in `items_json`/`rune_page_json` columns; bad cells are skipped safely.
+- Sync ingest hardened: broken bundles (malformed/empty deltas, lost WAL rows, truncated zips) are quarantined to `sync_inbox_failed/` with an error note instead of being retried — and erroring — on every startup.
+- Ingest now matches delta columns **by name** instead of position, so deltas from a collector running a different schema version can no longer silently misalign participant data.
+- Collector exports verify the delta (integrity, tables, row count, journal mode) and the finished zip before advancing the sync watermark, so corrupt bundles are never produced.
+- Data Watcher console no longer duplicates every log line (one shared log handler instead of one per background thread).
+- Watcher status pill is hidden when the local watcher is off (collection runs on the collector server).
 
 ## v3.2 changes
 

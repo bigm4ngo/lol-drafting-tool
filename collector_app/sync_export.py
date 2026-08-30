@@ -21,6 +21,7 @@ import json
 import logging
 import sqlite3
 import zipfile
+from contextlib import closing
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
@@ -76,46 +77,103 @@ def _write_state(state: dict[str, Any], path: Path = SYNC_STATE_PATH) -> None:
     temporary.replace(path)
 
 
+def _verify_delta(delta_path: Path, expected_matches: int) -> None:
+    """Fail loudly instead of shipping an unusable delta in a bundle.
+
+    A broken delta would otherwise be rejected (or silently lose matches) on
+    the Windows side while the watermark already advanced past those rows,
+    making the data unrecoverable. Checks integrity, required tables, the
+    committed row count, and that the file is in rollback-journal mode so all
+    copied rows live in the main file that gets zipped.
+    """
+    connection = sqlite3.connect(delta_path, timeout=30)
+    try:
+        try:
+            if str(connection.execute("PRAGMA journal_mode").fetchone()[0]).lower() != "delete":
+                connection.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+                connection.execute("PRAGMA journal_mode=DELETE")
+        except sqlite3.Error as exc:
+            raise RuntimeError(
+                f"could not finalise delta journal state: {exc}"
+            ) from exc
+    finally:
+        connection.close()
+
+    connection = sqlite3.connect(delta_path, timeout=30)
+    try:
+        check_row = connection.execute("PRAGMA quick_check").fetchone()
+        check = str(check_row[0]) if check_row else "unknown"
+        if check != "ok":
+            raise RuntimeError(f"exported delta failed integrity check: {check}")
+        for table in ("matches", "participants", "bans"):
+            try:
+                connection.execute(f"SELECT 1 FROM {table} LIMIT 1").fetchone()
+            except sqlite3.Error as exc:
+                raise RuntimeError(
+                    f"exported delta is missing the '{table}' table: {exc}"
+                ) from exc
+        copied_count = int(
+            connection.execute("SELECT COUNT(*) FROM matches").fetchone()[0]
+        )
+        mode = str(connection.execute("PRAGMA journal_mode").fetchone()[0])
+    finally:
+        connection.close()
+    if mode.lower() != "delete":
+        raise RuntimeError(
+            f"exported delta is in journal mode '{mode}'; rows may not be in "
+            "the main database file"
+        )
+    if expected_matches > 0 and copied_count != expected_matches:
+        raise RuntimeError(
+            f"exported delta holds {copied_count} matches, expected {expected_matches}"
+        )
+
+
 def _copy_delta_slice(src_path: Path, dst_path: Path, after_rowid: int) -> int:
     """Copy matches/participants/bans newer than ``after_rowid`` into ``dst_path``.
 
     ``dst_path`` is created with the standard schema first, then populated from
     the live database. ``journal_mode=DELETE`` keeps the exported main DB file
     self-contained so the archived copy does not depend on a ``-wal`` sidecar.
-    Returns the number of matches copied.
+    Returns the number of matches copied. The connection is closed explicitly
+    (a ``with`` block only ends the transaction, it never closes) and the
+    result is verified before the caller zips it.
     """
     DraftDatabase(dst_path).close()  # ensures the full schema exists.
-    with sqlite3.connect(dst_path, timeout=30) as dst:
-        dst.execute("PRAGMA journal_mode=DELETE")
-        dst.execute(f"ATTACH DATABASE ? AS src", (str(src_path),))
-        # Implicit commits (autocommit) write each statement directly to the
-        # main file; no WAL sidecar is left behind for the archived bundle.
-        cursor = dst.execute(
-            "INSERT INTO matches SELECT m.* FROM src.matches m "
-            "WHERE m.rowid > ?",
-            (after_rowid,),
-        )
-        copied = cursor.rowcount
-        dst.execute(
-            "INSERT INTO participants "
-            "SELECT p.* FROM src.participants p "
-            "JOIN src.matches m ON m.match_id = p.match_id "
-            "WHERE m.rowid > ?",
-            (after_rowid,),
-        )
-        dst.execute(
-            "INSERT INTO bans "
-            "SELECT b.* FROM src.bans b "
-            "JOIN src.matches m ON m.match_id = b.match_id "
-            "WHERE m.rowid > ?",
-            (after_rowid,),
-        )
+    connection = sqlite3.connect(dst_path, timeout=30)
+    try:
+        connection.execute("PRAGMA journal_mode=DELETE")
+        connection.execute("ATTACH DATABASE ? AS src", (str(src_path),))
+        with connection:
+            cursor = connection.execute(
+                "INSERT INTO matches SELECT m.* FROM src.matches m "
+                "WHERE m.rowid > ?",
+                (after_rowid,),
+            )
+            copied = cursor.rowcount
+            connection.execute(
+                "INSERT INTO participants "
+                "SELECT p.* FROM src.participants p "
+                "JOIN src.matches m ON m.match_id = p.match_id "
+                "WHERE m.rowid > ?",
+                (after_rowid,),
+            )
+            connection.execute(
+                "INSERT INTO bans "
+                "SELECT b.* FROM src.bans b "
+                "JOIN src.matches m ON m.match_id = b.match_id "
+                "WHERE m.rowid > ?",
+                (after_rowid,),
+            )
+    finally:
+        connection.close()
+    _verify_delta(dst_path, int(copied))
     return int(copied)
 
 
 def _stats_from_delta(delta_path: Path) -> dict[str, Any]:
     """Collapse counts + patch distribution for the manifest."""
-    with sqlite3.connect(delta_path, timeout=30) as connection:
+    with closing(sqlite3.connect(delta_path, timeout=30)) as connection:
         def scalar(query: str) -> int:
             return int(connection.execute(query).fetchone()[0] or 0)
 
@@ -186,7 +244,7 @@ class SyncExporter:
         if not self.database_path.is_file():
             return 0
         try:
-            with sqlite3.connect(self.database_path, timeout=30) as connection:
+            with closing(sqlite3.connect(self.database_path, timeout=30)) as connection:
                 return int(
                     connection.execute(
                         "SELECT COALESCE(MAX(rowid), 0) FROM matches"
@@ -237,6 +295,14 @@ class SyncExporter:
                     "manifest.json",
                     json.dumps(manifest, indent=2),
                 )
+            # A partially written zip must never leave the outbox: verify the
+            # archive before the watermark advances past these matches.
+            with closing(zipfile.ZipFile(bundle_path)) as archive:
+                corrupt_member = archive.testzip()
+                if corrupt_member is not None:
+                    raise RuntimeError(f"bundle member failed CRC check: {corrupt_member}")
+                if "delta.db" not in archive.namelist():
+                    raise RuntimeError("bundle was written without delta.db")
 
             state["last_match_rowid"] = max_rowid
             state["last_exported_at"] = exported_at
@@ -250,6 +316,11 @@ class SyncExporter:
             )
         except Exception:
             LOGGER.exception("Incremental export failed.")
+            # Never leave a half-written bundle behind for the transfer to pick up.
+            try:
+                bundle_path.unlink(missing_ok=True)
+            except (OSError, NameError, UnboundLocalError):
+                pass
             return ExportResult(exported=False, state=state, detail="export failed")
         finally:
             try:

@@ -64,6 +64,7 @@ except ImportError:
     Connector = None  # type: ignore[assignment]
 
 LOGGER = logging.getLogger("draft_app")
+APP_VERSION = "3.2.1"
 ROLE_LABELS = {
     "TOP": "Top",
     "JUNGLE": "Jungle",
@@ -423,13 +424,18 @@ class DraftApp(ctk.CTk):
         ctk.set_appearance_mode("dark")
         ctk.set_default_color_theme("blue")
         super().__init__()
-        self.title("Local League Draft Lab v3.2")
+        self.title(f"Local League Draft Lab v{APP_VERSION}")
         self.geometry(
             f"{self.profile['ui']['window_width']}x{self.profile['ui']['window_height']}"
         )
         self.minsize(1120, 720)
 
         self.events: queue.Queue[tuple[str, Any]] = queue.Queue()
+        # ONE shared handler forwards log records into the Data Watcher
+        # console. Background threads previously attached their own handlers,
+        # so every record was duplicated (once per attached handler).
+        self._console_log_handler = EventQueueLogHandler(self.events)
+        logging.getLogger().addHandler(self._console_log_handler)
         self.worker = ThreadPoolExecutor(max_workers=8, thread_name_prefix="draft-app")
         # Live scoring must never wait behind portrait/item downloads or other
         # general background tasks. v3 previously shared one executor for both,
@@ -609,7 +615,7 @@ class DraftApp(ctk.CTk):
         header.pack(fill="x")
         ctk.CTkLabel(
             header,
-            text="LOCAL LEAGUE DRAFT LAB · v3.2",
+            text=f"LOCAL LEAGUE DRAFT LAB · v{APP_VERSION}",
             font=ctk.CTkFont(size=20, weight="bold"),
         ).pack(side="left", padx=14, pady=9)
         self.status_label = ctk.CTkLabel(header, text="Starting…")
@@ -914,7 +920,14 @@ class DraftApp(ctk.CTk):
             command=self._open_sync_inbox,
             width=145,
         ).pack(side="left", padx=6)
-        self.job_label = ctk.CTkLabel(buttons, text="Idle")
+        # The local watcher is off by default (collection runs on the collector
+        # server), so the watcher pill starts empty and only appears when the
+        # local watcher is actually enabled and doing something.
+        if self.profile["background_collector"].get("enabled", False):
+            initial_watcher = "Watcher: starting…"
+        else:
+            initial_watcher = ""
+        self.job_label = ctk.CTkLabel(buttons, text=initial_watcher)
         self.job_label.pack(side="right", padx=12)
         self.console = ctk.CTkTextbox(
             self.data_tab, font=("Consolas", 12), wrap="none"
@@ -2653,9 +2666,6 @@ class DraftApp(ctk.CTk):
         self, kind: str, background: bool, rebuild_after_scrape: bool
     ) -> None:
         return_code = -1
-        handler = EventQueueLogHandler(self.events)
-        root_logger = logging.getLogger()
-        root_logger.addHandler(handler)
         try:
             if kind == "scrape":
                 from scraper import run_scrape
@@ -2685,7 +2695,6 @@ class DraftApp(ctk.CTk):
         except Exception:
             LOGGER.exception("Packaged data job failed.")
         finally:
-            root_logger.removeHandler(handler)
             self.data_job_lock.release()
             self.events.put((
                 "job_done",
@@ -2745,9 +2754,6 @@ class DraftApp(ctk.CTk):
         rebuild subprocess the background watcher uses (GPU stays on this PC),
         then signals the UI to reload the engine.
         """
-        handler = EventQueueLogHandler(self.events)
-        root_logger = logging.getLogger()
-        root_logger.addHandler(handler)
         ingester = SyncIngester()
         try:
             while not self.shutdown_event.is_set():
@@ -2777,7 +2783,22 @@ class DraftApp(ctk.CTk):
                         "ingest_status",
                         {"state": "ingesting", "message": f"found {len(pending)} pending bundle(s)", "busy": True},
                     ))
-                    result = ingester.ingest_all()
+                    try:
+                        result = ingester.ingest_all()
+                    except Exception:
+                        # One unexpected bundle problem must never kill the
+                        # ingest watcher; report and retry on the next poll.
+                        LOGGER.exception("Sync ingest run failed unexpectedly.")
+                        self.events.put((
+                            "ingest_status",
+                            {
+                                "state": "error",
+                                "message": "ingest run failed; will retry next poll",
+                                "busy": False,
+                            },
+                        ))
+                        time.sleep(poll_seconds)
+                        continue
                     rebuilt = False
                     if result.matches_added > 0 and bool(sync.get("enable_auto_rebuild", True)):
                         self.events.put((
@@ -2810,14 +2831,9 @@ class DraftApp(ctk.CTk):
                 "ingest_status",
                 {"state": "error", "message": f"ingest watcher stopped: {exc}", "busy": False},
             ))
-        finally:
-            root_logger.removeHandler(handler)
 
     def _run_background_match_watcher_thread(self) -> None:
         """Run the adaptive unseen-match watcher outside Tkinter's UI thread."""
-        handler = EventQueueLogHandler(self.events)
-        root_logger = logging.getLogger()
-        root_logger.addHandler(handler)
         try:
             asyncio.run(
                 run_background_match_watcher(
@@ -2843,8 +2859,6 @@ class DraftApp(ctk.CTk):
                     "busy": False,
                 },
             ))
-        finally:
-            root_logger.removeHandler(handler)
 
     @staticmethod
     def _read_json_version(path: Path) -> str:
@@ -3048,10 +3062,23 @@ class DraftApp(ctk.CTk):
         message = str(payload.get("message", state))
         self.collector_status_text = message
         self.collector_busy = bool(payload.get("busy", False))
-        label = state.replace("_", " ").title()
-        next_check = payload.get("next_check_seconds")
-        if next_check is not None and not self.collector_busy:
-            label += f" · next check ~{int(next_check)}s"
+        if state == "paused":
+            # The local watcher is deliberately disabled in Settings; match
+            # collection happens on the collector server. Hiding the pill is
+            # clearer than a permanently stuck "Paused" notice that reads
+            # like a fault. Never clobber an in-flight manual job label.
+            if self.current_data_job is not None:
+                return
+            self.job_label.configure(text="")
+            self._refresh_data_status()
+            return
+        if state == "stopped":
+            label = ""  # app shutdown; nothing to show
+        else:
+            label = state.replace("_", " ").title()
+            next_check = payload.get("next_check_seconds")
+            if next_check is not None and not self.collector_busy:
+                label += f" · next check ~{int(next_check)}s"
         self.job_label.configure(text=f"Watcher: {label}")
         self._refresh_data_status()
         if bool(payload.get("analytics_rebuilt", False)):
@@ -3336,6 +3363,10 @@ class DraftApp(ctk.CTk):
     def _on_close(self) -> None:
         self.shutdown_event.set()
         self.collector_wake_event.set()
+        try:
+            logging.getLogger().removeHandler(self._console_log_handler)
+        except Exception:
+            pass
         if self.ban_watchdog_after:
             try:
                 self.after_cancel(self.ban_watchdog_after)
@@ -3381,7 +3412,7 @@ def _packaged_self_test() -> int:
         if shared_marker.exists() and PROJECT_ROOT == EXECUTABLE_DIR:
             raise RuntimeError("shared_project_root.txt exists but the EXE did not resolve the shared project root")
         marker.write_text(
-            "League Draft Lab v3.2 packaged self-test passed.\n"
+            f"League Draft Lab v{APP_VERSION} packaged self-test passed.\n"
             f"Executable directory: {EXECUTABLE_DIR}\n"
             f"Shared project root: {PROJECT_ROOT}\n"
             f"API key file: {ENV_PATH}\n",
@@ -3389,7 +3420,7 @@ def _packaged_self_test() -> int:
         )
         return 0
     except Exception as exc:
-        marker.write_text(f"League Draft Lab v3.2 packaged self-test failed: {exc!r}\n", encoding="utf-8")
+        marker.write_text(f"League Draft Lab v{APP_VERSION} packaged self-test failed: {exc!r}\n", encoding="utf-8")
         return 1
 
 
