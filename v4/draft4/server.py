@@ -93,8 +93,16 @@ class App:
         return {"available": True, **session_to_state(session, self.catalog)}
 
 
-def make_handler(app: App):
+def make_handler(app: App, allowed_hosts: set[str] | None = None):
+    """allowed_hosts: accepted Host headers. Rejecting other hosts blocks DNS-rebinding pages from reading
+    live champ-select data or driving the engine. None = any host (LAN sharing on a trusted network)."""
     class Handler(BaseHTTPRequestHandler):
+        def _host_ok(self) -> bool:
+            if allowed_hosts is None or self.headers.get("Host", "") in allowed_hosts:
+                return True
+            self._json({"error": "unexpected Host header"}, HTTPStatus.FORBIDDEN)
+            return False
+
         def log_message(self, fmt, *args) -> None:
             LOG.debug(fmt, *args)
 
@@ -110,6 +118,8 @@ def make_handler(app: App):
             self._send(code, json.dumps(obj).encode(), "application/json")
 
         def do_GET(self) -> None:
+            if not self._host_ok():
+                return
             path = self.path.split("?")[0]
             if path == "/api/meta":
                 return self._json(app.meta())
@@ -122,9 +132,17 @@ def make_handler(app: App):
             self._send(200, target.read_bytes(), mimetypes.guess_type(target.name)[0] or "application/octet-stream")
 
         def do_POST(self) -> None:
-            length = int(self.headers.get("Content-Length") or 0)
-            if length > MAX_BODY:
-                return self._json({"error": "request too large"}, HTTPStatus.REQUEST_ENTITY_TOO_LARGE)
+            if not self._host_ok():
+                return
+            # JSON-only POSTs can't be sent cross-site without a CORS preflight, which this server never grants
+            if self.headers.get("Content-Type", "").split(";")[0].strip() != "application/json":
+                return self._json({"error": "Content-Type must be application/json"}, HTTPStatus.UNSUPPORTED_MEDIA_TYPE)
+            try:
+                length = int(self.headers.get("Content-Length") or 0)
+            except ValueError:
+                return self._json({"error": "bad Content-Length"}, 400)
+            if length < 0 or length > MAX_BODY:
+                return self._json({"error": "request body missing or too large"}, HTTPStatus.REQUEST_ENTITY_TOO_LARGE)
             try:
                 body = json.loads(self.rfile.read(length) or b"{}")
                 if self.path == "/api/analyze":
@@ -150,7 +168,11 @@ def main() -> None:
     a = ap.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
     app = App(a.models)
-    server = ThreadingHTTPServer((a.host, a.port), make_handler(app))
+    loopback = a.host in ("127.0.0.1", "localhost", "::1")
+    hosts = {f"127.0.0.1:{a.port}", f"localhost:{a.port}", f"[::1]:{a.port}"} if loopback else None
+    if not loopback:
+        LOG.warning("Listening on %s without login or Host checks: only use this on a trusted network", a.host)
+    server = ThreadingHTTPServer((a.host, a.port), make_handler(app, hosts))
     LOG.info("Draft Lab v4 on http://%s:%d  (policy=%s, value=%s)", a.host, a.port, app.status["policy"], app.status["value"])
     try:
         server.serve_forever()
