@@ -1,0 +1,42 @@
+{
+  "version": "policy-20261119-1849",
+  "test": {
+    "log_loss": 3.8271939179277332,
+    "top1": 0.07899938233477455,
+    "top5": 0.27924644842495366,
+    "n": 16190,
+    "params": 70125,
+    "seconds": 3.8
+  },
+  "memory": "none",
+  "all": {
+    "prior_baseline": {
+      "log_loss": 3.8568940848903646,
+      "top1": 0.06707844348363187,
+      "top5": 0.26436071649166154,
+      "n": 16190
+    },
+    "policy_none": {
+      "log_loss": 3.8271939179277332,
+      "top1": 0.07899938233477455,
+      "top5": 0.27924644842495366,
+      "n": 16190,
+      "params": 70125,
+      "seconds": 3.8
+    },
+    "policy_engram": {
+      "log_loss": 3.829104880037832,
+      "top1": 0.0801111797405806,
+      "top5": 0.2793699814700432,
+      "n": 16190,
+      "params": 602733,
+      "seconds": 23.9
+    }
+  },
+  "beats_baseline": true,
+  "engram_ablation": {
+    "delta_log_loss": 0.0019109621100987795
+  },
+  "device": "cuda",
+  "formulation": "ranked masked-lineup (eventual appearances, not pick order)"
+}

@@ -1,0 +1,9 @@
+.venv/
+__pycache__/
+.pytest_cache/
+data/snapshots/
+data/*.sqlite3
+models/candidates/
+!models/active/*.npz
+models/active/*.previous.*
+data/pro/

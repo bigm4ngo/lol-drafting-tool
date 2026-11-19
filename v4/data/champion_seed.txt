@@ -1,0 +1,176 @@
+# Coach-editable seed: Name|roles (T J M A S, main first)|traits|damage (AD/AP/MIX)
+# Traits: engage disengage peel poke pick dive waveclear scaling early splitpush frontline teamfight
+# Used only until data priors exist; role probabilities from real matches override the role column.
+Aatrox|T|frontline teamfight early|AD
+Ahri|M|pick waveclear|AP
+Akali|M T|dive pick|MIX
+Akshan|M A|pick early|AD
+Alistar|S|engage peel frontline|AP
+Ambessa|T J|dive early|AD
+Amumu|J S|engage teamfight frontline|AP
+Anivia|M|waveclear scaling disengage|AP
+Annie|M S|engage teamfight|AP
+Aphelios|A|scaling teamfight|AD
+Ashe|A S|pick engage poke|AD
+AurelionSol|M|scaling waveclear teamfight|AP
+Aurora|M T|pick waveclear|AP
+Azir|M|scaling waveclear disengage|AP
+Bard|S|pick engage|AP
+Belveth|J|scaling dive|AD
+Blitzcrank|S|pick engage|AP
+Brand|S M|poke teamfight|AP
+Braum|S|peel disengage frontline|AP
+Briar|J|dive early|AD
+Caitlyn|A|poke early|AD
+Camille|T|dive pick splitpush|AD
+Cassiopeia|M T|scaling teamfight|AP
+Chogath|T M|frontline teamfight scaling|AP
+Corki|M|poke scaling|MIX
+Darius|T|early frontline|AD
+Diana|J M|engage dive teamfight|AP
+DrMundo|T J|frontline scaling|AD
+Draven|A|early|AD
+Ekko|J M|dive pick|AP
+Elise|J|pick early|AP
+Evelynn|J|pick|AP
+Ezreal|A|poke|AD
+Fiddlesticks|J|engage teamfight|AP
+Fiora|T|splitpush scaling|AD
+Fizz|M|dive pick|AP
+Galio|M S|engage peel teamfight|AP
+Gangplank|T|scaling waveclear teamfight|AD
+Garen|T|frontline early|AD
+Gnar|T|engage frontline teamfight|AD
+Gragas|J T S|engage disengage frontline|AP
+Graves|J|early|AD
+Gwen|T J|scaling dive|AP
+Hecarim|J|engage dive|AD
+Heimerdinger|M T S|poke waveclear|AP
+Hwei|M S|poke waveclear pick|AP
+Illaoi|T|splitpush frontline|AD
+Irelia|T M|dive early|AD
+Ivern|J|peel|AP
+Janna|S|disengage peel|AP
+JarvanIV|J|engage dive early|AD
+Jax|T J|splitpush scaling|MIX
+Jayce|T M|poke early|AD
+Jhin|A|pick poke|AD
+Jinx|A|scaling teamfight|AD
+KSante|T|frontline engage peel|AD
+Kaisa|A|dive scaling|MIX
+Kalista|A|early engage|AD
+Karma|S M|poke disengage peel|AP
+Karthus|J M|scaling teamfight|AP
+Kassadin|M|scaling dive|AP
+Katarina|M|dive teamfight|AP
+Kayle|T M|scaling|MIX
+Kayn|J|dive pick|AD
+Kennen|T M|engage teamfight|AP
+Khazix|J|pick early|AD
+Kindred|J|scaling|AD
+Kled|T|engage dive early|AD
+KogMaw|A|scaling|MIX
+Leblanc|M|pick early|AP
+LeeSin|J|pick early dive|AD
+Leona|S|engage frontline|AP
+Lillia|J|teamfight scaling|AP
+Lissandra|M|engage teamfight disengage|AP
+Locke|T J|dive pick|AD
+Lucian|A M|early|AD
+Lulu|S|peel disengage|AP
+Lux|S M|poke pick|AP
+Malphite|T S|engage frontline teamfight|AP
+Malzahar|M|pick waveclear|AP
+Maokai|S J T|engage frontline peel|AP
+MasterYi|J|scaling|AD
+Mel|M S|poke waveclear|AP
+Milio|S|peel disengage|AP
+MissFortune|A|teamfight early|AD
+MonkeyKing|J T|engage dive|AD
+Mordekaiser|T|frontline|AP
+Morgana|S|pick peel|AP
+Naafiri|M J|dive early|AD
+Nami|S|peel early|AP
+Nasus|T|scaling splitpush|AD
+Nautilus|S|engage pick frontline|AP
+Neeko|M S|engage teamfight|AP
+Nidalee|J|poke early|AP
+Nilah|A|scaling teamfight|AD
+Nocturne|J|dive pick|AD
+Nunu|J|engage pick|AP
+Olaf|T J|early dive|AD
+Orianna|M|teamfight waveclear scaling|AP
+Ornn|T|engage frontline scaling|AP
+Pantheon|S T M|early pick|AD
+Poppy|J T S|disengage peel frontline|AD
+Pyke|S|pick engage|AD
+Qiyana|J M|engage pick|AD
+Quinn|T|splitpush early|AD
+Rakan|S|engage peel|AP
+Rammus|J|engage frontline|AP
+RekSai|J|early dive|AD
+Rell|S|engage frontline|AP
+Renata|S|peel disengage teamfight|AP
+Renekton|T|early dive|AD
+Rengar|J|pick|AD
+Riven|T|early dive|AD
+Rumble|T M|teamfight early|AP
+Ryze|M T|scaling waveclear|AP
+Samira|A|dive teamfight|AD
+Sejuani|J|engage frontline|AP
+Senna|S A|poke scaling|AD
+Seraphine|S M|teamfight poke disengage|AP
+Sett|T S|engage frontline|AD
+Shaco|J S|pick|MIX
+Shen|T|peel frontline engage|AD
+Shyvana|J|scaling teamfight|MIX
+Singed|T|frontline|AP
+Sion|T|engage frontline waveclear|AD
+Sivir|A|waveclear teamfight engage|AD
+Skarner|J T|engage pick frontline|AD
+Smolder|A M|scaling poke|AD
+Sona|S|scaling teamfight|AP
+Soraka|S|peel|AP
+Swain|S M|teamfight frontline|AP
+Sylas|M J|dive teamfight|AP
+Syndra|M|pick waveclear|AP
+TahmKench|T S|peel frontline|AP
+Taliyah|J M|waveclear pick|AP
+Talon|M J|pick early|AD
+Taric|S|peel engage|AP
+Teemo|T|poke|AP
+Thresh|S|pick engage peel|AP
+Tristana|A M|scaling dive|AD
+Trundle|J T|splitpush early|AD
+Tryndamere|T|splitpush scaling|AD
+TwistedFate|M|pick waveclear|AP
+Twitch|A|scaling|MIX
+Udyr|J T|frontline early|MIX
+Urgot|T|frontline|AD
+Varus|A|poke pick|MIX
+Vayne|A T|scaling splitpush|AD
+Veigar|M|scaling pick|AP
+Velkoz|S M|poke|AP
+Vex|M|engage teamfight|AP
+Vi|J|engage pick dive|AD
+Viego|J|dive scaling|AD
+Viktor|M|scaling waveclear teamfight|AP
+Vladimir|M T|scaling teamfight|AP
+Volibear|J T|dive frontline early|MIX
+Warwick|J T|early pick|MIX
+Xayah|A|scaling disengage|AD
+Xerath|M S|poke|AP
+XinZhao|J|early dive|AD
+Yasuo|M T|teamfight scaling|AD
+Yone|M T|teamfight scaling|AD
+Yorick|T|splitpush|AD
+Yunara|A|scaling|AD
+Yuumi|S|peel scaling|AP
+Zaahen|T J||AD
+Zac|J|engage frontline teamfight|AP
+Zed|M|pick|AD
+Zeri|A|scaling|AD
+Ziggs|M A|poke waveclear|AP
+Zilean|S M|peel scaling|AP
+Zoe|M|pick poke|AP
+Zyra|S|poke teamfight|AP

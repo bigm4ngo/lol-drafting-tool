@@ -1,0 +1,6 @@
+# Engine + UI need only numpy and requests. Torch is for training and for loading trained checkpoints.
+numpy>=2.0,<3
+requests>=2.32,<3
+pytest>=8.3
+# torch: install the CUDA build for your GPU, e.g. (RTX 50xx / Blackwell needs CUDA 12.8+ wheels):
+#   pip install torch --index-url https://download.pytorch.org/whl/cu128

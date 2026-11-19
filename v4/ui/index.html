@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Draft Lab v4</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="bar">
+  <h1>Draft Lab <span>v4</span></h1>
+  <div class="modes" role="tablist" aria-label="Mode">
+    <button role="tab" id="mode-manual" aria-selected="true">Manual</button>
+    <button role="tab" id="mode-live" aria-selected="false">Live client</button>
+  </div>
+  <label>Format <select id="fmt"></select></label>
+  <label id="first-wrap">First pick <select id="first"><option value="blue">Blue</option><option value="red">Red</option></select></label>
+  <label>Advise <select id="our-side">
+    <option value="auto">Whoever acts</option><option value="blue">Blue team</option><option value="red">Red team</option>
+  </select></label>
+  <label>Game plan <select id="plan"><option value="">Let the engine suggest</option></select></label>
+  <label>Think time <select id="budget">
+    <option value="800">Fast</option><option value="1500" selected>Normal</option><option value="4000">Deep</option>
+  </select></label>
+  <span class="grow"></span>
+  <label class="check"><input type="checkbox" id="auto" checked> Analyse after each lock</label>
+  <button class="primary" id="analyze">Analyse</button>
+</header>
+
+<nav class="strip" id="strip" aria-label="Draft order"></nav>
+
+<main class="board">
+  <section class="team blue" id="team-blue" aria-label="Blue team"></section>
+
+  <section class="center">
+    <div class="tools">
+      <input id="search" type="search" placeholder="Search champions" aria-label="Search champions" autocomplete="off">
+      <div class="chips" id="role-filter"></div>
+      <button id="skip-ban" title="Leave this ban slot empty">No ban</button>
+    </div>
+    <div class="grid" id="grid" aria-label="Champions"></div>
+    <div class="actions">
+      <button id="undo">Undo</button>
+      <button id="clear-slot">Clear slot</button>
+      <button id="swap">Swap sides</button>
+      <button id="reset">Reset draft</button>
+      <button id="next-game" hidden>Next game (fearless)</button>
+      <button id="export">Export</button>
+      <label class="file">Import<input type="file" id="import" accept="application/json" hidden></label>
+      <span class="grow"></span>
+      <span id="status" class="status" role="status"></span>
+    </div>
+  </section>
+
+  <section class="team red" id="team-red" aria-label="Red team"></section>
+</main>
+
+<section class="lower">
+  <section class="analysis" id="analysis" aria-live="polite">
+    <p class="empty">Place picks and bans, or press Analyse. Click any slot to edit it out of order.</p>
+  </section>
+  <aside class="side-panel">
+    <details open>
+      <summary>Player pools</summary>
+      <p class="hint">Champions each of your players is comfortable on. Used to shortlist picks and never suggested as bans.</p>
+      <div id="pools"></div>
+      <label class="check"><input type="checkbox" id="pool-only"> Only recommend pool champions</label>
+    </details>
+    <details id="fearless-panel" hidden>
+      <summary>Fearless series</summary>
+      <p class="hint">Champions locked out by earlier games in this series.</p>
+      <div id="unavailable" class="locked-list"></div>
+    </details>
+    <details>
+      <summary>Engine status</summary>
+      <div id="engine-status" class="engine-status"></div>
+    </details>
+  </aside>
+</section>
+<datalist id="champ-names"></datalist>
+<script src="app.js"></script>
+</body>
+</html>
